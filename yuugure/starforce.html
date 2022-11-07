@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta  charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Maplestory Star Force Simulator</title>
+<style>
+body{
+background: #87cefa;
+font-family: "Comic Sans MS", "Times New Roman", Dotum;
+}
+tr{
+text-align: center;
+}
+table.inline {display:inline;}
+p.big {line-height:200%;}
+ms{font-family: "ＭＳ ゴシック"}
+</style>
+<script type="text/javascript">
+  const successChance = [95,90,85,85,80,75,70,65,60,55,50,45,40,35,30,30,30,30,30,30,30,30,3,2,1]
+  const keepChance = [5,10,15,15,20,25,30,35,40,45,50,0,0,0,0,67.9,0,0,0,0,63,0,0,0,0]
+  const failChance = [0,0,0,0,0,0,0,0,0,0,0,55,59.4,63.7,68.6,0,67.9,67.9,67.2,67.2,0,63,77.6,68.6,59.4]
+  const destroyChance = [0,0,0,0,0,0,0,0,0,0,0,0,0.6,1.3,1.4,2.1,2.1,2.1,2.8,2.8,7,7,19.4,29.4,39.6]
+  const successChance_s = [50,50,45,40,40,40,40,40,40,37,35,35,3,2,1]
+  const keepChance_s = [50,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  const failChance_s = [0,50,55,60,60,58.2,57,55.8,54,53.55,52,48.75,48.5,49,49.5]
+  const destroyChance_s = [0,0,0,0,0,1.8,3,4.2,6,9.45,13,16.25,48.5,49,49.5]
+ const cost_140 = [110800,220500,330300,440000,549800,659600,769300,879100,988800,1098600,4448200,5625900,6982900,8529400,10275700,24462200,28812500,33620400,38904500,44683300,50974700,57796700,65166700,73102200,81620200]
+  const cost_150 = [136000,271000,406000,541000,676000,811000,946000,1081000,1216000,1351000,10940700,13837700,17175800,20980200,25275900,30087200,35437900,41351400,47850600,54958200,62696400,71087200,80152000,89912300,100389000]
+  const cost_160 = [164800,328700,492500,656400,820200,984000,1147900,1311700,1475600,1639400,6639400,8397300,10422900,12731500,15338200,36514500,43008300,50185100,58072700,66698700,76090000,86273300,97274600,109120000,121834900]
+  const cost_200 = [321000,641000,961000,1281000,1601000,1921000,2241000,2561000,2881000,3201000,12966500,16400100,20356300,24865300,29956500,71316500,83999600,98016700,113422300,130270000,148612400,168501500,189988600,213124200,237957900]
+  const cost_150s = [27916000,33499300,39082500,44665800,50248980,55832200,55832200,55832200,55832200,55832200,55832200,55832200,55832200,55832200,55832200]
+  var ifsuper = false;
+  var level;
+  var iffixed = false;
+  var iffinished = false;
+  var ifdestroyprotect = false;
+  var ifchance = false;
+  var ifstarcatch = true;
+  var star = 0;
+  var srate;
+  var krate;
+  var drrate;
+  var derate;
+  var cost;
+  var tempratio;
+  var randomnum;
+  var upgradestatus;
+  var chancehelper = false;
+  var totalmeso = 0;
+  var totalequip = 0;
+  var won = 0;
+  var yuan = 0;
+  function FormatNum(str){
+    var str = ''+str;
+    var newStr = "";
+    var count = 0;
+    if(str.indexOf(".")==-1){
+        for(var i=str.length-1;i>=0;i--){
+            if(count % 3 == 0 && count != 0){
+                newStr = str.charAt(i) + "," + newStr;
+            }else{
+                newStr = str.charAt(i) + newStr;
+            }
+            count++;
+        }
+        str = newStr;
+    }
+    else
+    {
+        for(var i = str.indexOf(".")-1;i>=0;i--){
+            if(count % 3 == 0 && count != 0){
+                newStr = str.charAt(i) + "," + newStr;
+            }else{
+                newStr = str.charAt(i) + newStr;
+            }
+            count++;
+        }
+        str = newStr + (str + "00").substr((str + "00").indexOf("."),3);
+    }
+    return str;
+  }
+  function FormatFloat(str){
+    var x = parseFloat(str);
+    x = Math.round(x*100)/100;
+    var s = x.toString();
+    var pos_decimal = s.indexOf('.');
+    if (pos_decimal < 0)
+    {
+      pos_decimal = s.length;
+      s += '.';
+    }
+    while (s.length <= pos_decimal + 2)
+    {
+      s += '0';
+    }
+    return s;
+  }
+  function setReadOnly() {
+    if(iffixed==false){
+      ifsuper=document.getElementById('ifsuper').checked;
+      level=parseInt(document.getElementById('level').value);
+      if((level==140&&ifsuper==false)||(level==150)||(level==160&&ifsuper==false)||(level==200&&ifsuper==false)){
+        star = 0;
+        document.getElementById('level').readOnly = true;
+        document.getElementById('ifsuper').disabled = true;
+        iffixed = true;
+        doCalc();
+      }else{
+        alert("Illegal input. Please read \"Guidance\" if you don't know what to input.");
+      }
+    }
+  }
+  function doCalc(){
+    if(iffixed==true){
+      if(star>=12&&star<=16&&ifsuper==false) document.getElementById('protect').disabled=false;
+      else document.getElementById('protect').disabled=true;
+      if(ifsuper==true&&star==15) iffinished=true;
+      if(ifsuper==false&&star==25) iffinished=true;
+      ifdestroyprotect=document.getElementById('protect').checked;
+      ifstarcatch=document.getElementById('starcatch').checked;
+      if(iffinished==false){
+        switch (level){
+          case 140: cost = cost_140[star]; break;
+          case 160: cost = cost_160[star]; break;
+          case 200: cost = cost_200[star]; break;
+          case 150: if(ifsuper==true) cost = cost_150s[star]; else cost= cost_150[star]; break;
+        }
+       if(ifchance==false){
+          document.getElementById("chance").innerHTML = "";
+          if(ifsuper==true){
+            srate=successChance_s[star];
+            krate=keepChance_s[star];
+            drrate=failChance_s[star];
+            derate=destroyChance_s[star];
+          }else{
+            srate=successChance[star];
+            krate=keepChance[star];
+            drrate=failChance[star];
+            derate=destroyChance[star];
+          }
+          if(ifstarcatch==true){
+            srate = srate * 1.05;
+            tempratio = krate+drrate+derate;
+            krate = (krate / tempratio) * (100-srate);
+            derate = (derate / tempratio) * (100-srate);
+            drrate = (drrate / tempratio) * (100-srate);
+          }
+        }else{
+          srate = 100;
+          krate = 0;
+          derate = 0;
+          drrate = 0;
+          document.getElementById("chance").innerHTML = "Chance Time!!";
+        }
+      if(ifdestroyprotect==true&&star>=12&&star<=16&&ifsuper==false){
+          cost = cost * 2;
+          if(star==15) krate = krate + derate;
+          else drrate = drrate + derate;
+          derate = 0;
+      }
+      document.getElementById("star").innerHTML = star;
+      document.getElementById("nextstar").innerHTML = (star + " -> " + (star+1));
+      if(star<5) document.getElementById("nextstar").style.color = "green";
+      else if(star<10) document.getElementById("nextstar").style.color = "blue";
+      else if(star<15) document.getElementById("nextstar").style.color = "red";
+      else if(star<20) document.getElementById("nextstar").style.color = "black";
+      else document.getElementById("nextstar").style.color = "yellow";
+      document.getElementById("successrate").innerHTML = (FormatFloat(srate) + " %");
+      document.getElementById("keeprate").innerHTML = (FormatFloat(krate) + " %");
+      document.getElementById("droprate").innerHTML = (FormatFloat(drrate) + " %");
+      document.getElementById("destroyrate").innerHTML = (FormatFloat(derate) + " %");
+      document.getElementById("meso").innerHTML = FormatNum(cost);
+      document.getElementById("totalmeso").innerHTML = FormatNum(totalmeso);
+      document.getElementById("totalequip").innerHTML = FormatNum(totalequip);
+      document.getElementById("won").innerHTML = FormatNum(won);
+      document.getElementById("yuan").innerHTML = FormatNum(yuan);
+      }else{
+        document.getElementById("star").innerHTML = star;
+        document.getElementById("nextstar").innerHTML = star;
+        document.getElementById("nextstar").style.color = "yellow";
+        document.getElementById("successrate").innerHTML = "0.00 %";
+        document.getElementById("keeprate").innerHTML = "0.00 %";
+        document.getElementById("droprate").innerHTML = "0.00 %";
+        document.getElementById("destroyrate").innerHTML = "0.00 %";
+        document.getElementById("meso").innerHTML = "0";
+        document.getElementById("status").innerHTML = "Congratulations!! You get all the stars!";
+      }
+    }
+  }
+  function upgrade(){
+    if(iffinished==false){
+      if(iffixed==true){
+        randomnum = Math.random()*100;
+        if(randomnum<srate){
+          upgradestatus = 1;
+        }else{
+          if(randomnum<srate+krate){
+            upgradestatus = 2;
+          }else{
+            if(randomnum<srate+krate+drrate){
+              upgradestatus = 3;
+            }else{
+              upgradestatus = 4;
+            }
+          }
+        }
+        switch(upgradestatus){
+          case 1: star += 1; document.getElementById("status").innerHTML = "Success!"; if(ifchance==true) ifchance = false; chancehelper = false; break;
+          case 2: document.getElementById("status").innerHTML = "Failed! Star keep"; chancehelper = false; break;
+          case 3: star -= 1;  document.getElementById("status").innerHTML = "Failed! Star drop"; if(chancehelper==false) chancehelper=true; else{ifchance = true; chancehelper = false;} break;
+          case 4: if(ifsuper==false){star = 12; document.getElementById("status").innerHTML = "Destroyed! Star decreased to 12";}else{star = 0; document.getElementById("status").innerHTML = "Destroyed! Star decreased to 0";} totalequip += 1; chancehelper = false; break;
+        }
+        totalmeso += cost;
+        won = totalmeso * 4 / 100000
+        yuan = won / 173
+        doCalc();
+      }
+    }
+  }
+  function reset(){
+    ifsuper = false;
+    iffixed = false;
+    iffinished = false;
+    ifdestroyprotect = false;
+    ifchance = false;
+    ifstarcatch = true;
+    star = 0;
+    document.getElementById("star").innerHTML="";
+    document.getElementById("nextstar").innerHTML="";
+    document.getElementById("successrate").innerHTML = "";
+    document.getElementById("keeprate").innerHTML = "";
+    document.getElementById("droprate").innerHTML = "";
+    document.getElementById("destroyrate").innerHTML = "";
+    document.getElementById("meso").innerHTML = "";
+    document.getElementById("totalmeso").innerHTML = 0;
+    document.getElementById("totalequip").innerHTML = 0;
+    document.getElementById("won").innerHTML = 0;
+    document.getElementById("yuan").innerHTML = 0;
+    cost = 0;
+    chancehelper = false;
+    totalmeso = 0;
+    totalequip = 0;
+    document.getElementById('level').readOnly = false;
+    document.getElementById('ifsuper').disabled = false;
+    document.getElementById("level").innerHTML="140";
+    document.getElementById("ifsuper").checked=false;
+    document.getElementById("starcatch").checked=true;
+    document.getElementById("protect").checked=false;
+  }
+</script>
+</head>
+
+<body>
+<h1>Maplestory Star Force Simulator</h1>
+<p><big><i><strong>Maplestory Star Force Simulator</strong> is a simulator of the Star Force system in Maplestory.</i></big></p>
+<p>
+Level of the equipment: <textarea id="level" rows="1" cols="8">140</textarea>
+ Superior<input type="checkbox" name="super" id="ifsuper" />
+  <button onclick="setReadOnly()">Fix</button>
+</p>
+<p>
+Current Star(s): <span id="star"></span>
+</p>
+<p class="big">
+<strong><i><span id="chance"></span></i></strong><br>
+To next star: <span id="nextstar"></span><br>
+Success Chance: <span id="successrate"></span><br>
+Failure (Keep) Chance: <span id="keeprate"></span><br>
+Failure (Drop) Chance: <span id="droprate"></span><br>
+Destroy Chance: <span id="destroyrate"></span><br>
+<strong>Cost Mesos: <span id="meso"></span></strong><br>
+<span id="status"></span><br>
+Enable Star Catch<input type="checkbox" name="starcatch" id="starcatch" checked="checked" onclick="doCalc()"/><br>
+Destroy Protect<input type="checkbox" name="protect" id="protect" onclick="doCalc()" disabled=true /><br>
+<button onclick="upgrade()">Enhance</button><br>
+Now spent <span id="totalmeso">0</span> mesos and <span id="totalequip">0</span> equipments.<br>
+This is about <span id="won">0</span> KRW or <span id="yuan">0</span> CNY. (Exchange rates unreliable)
+<br>
+<button onclick="reset()">Reset</button><br>
+<br>
+</p>
+<h2><strong>Guidance</strong></h2>
+<p>
+1. This program is to simulate Maplestory (메이플스토리)'s equipment enhance system, called Star Force. The aim is to use meso(in-game currency) to enhance the equipment, that means, get as much stars as possible.<br>
+2. This program only supports <strong>level 140, 150, 160, 200</strong> equipments.<br>
+3. The "Superior" checkbox means that the equipment has a different way of enhancing. You can <strong>only choose level 150 if you ticked the "Superior" checkbox</strong>.<br>
+4. After inputting level, click "Fix" to start.<br>
+5. The program will show the current number of stars, probability of success, fail, or destroy, and required mesos on the next enhance. The total spent meso and destroyed equipments will be shown at the bottom of the program.<br>
+6. "Star Catch" is a mini-game, and will increase the probability of success by 4.5p% if you win the game, and the probability of fail or destroy will be reallocated. The game's difficulty is low, and most players win it almost every try. So it's recommended to tick the checkbox of "Enable Star Catch". If you want to experience the enhancing system with original probabilities, it's a good choice to cancel it.<br>
+7. "Destroy Protect" is a service provided to 12~16 star normal (non-superior) equipments. You can pay double the meso to decrease the probability of destroy to 0%.<br>
+8. If the star dropped twice in a row, there is a "Chance Time", and the next enhance will succeed certainly.<br>
+9. If you destroy a normal equipment, the star will be decreased to 12, and if you destroy a superior equipment, the star will be decreased to 0.<br>
+10. Normal equipments have a maximum of 25 stars, and superior equipments have a maximum of 15 stars. The connection between stars and success chance (original chance) are as follows:<br>
+<table align="center">
+<tr>
+<td>
+<table class="inline" border="1" align="center" valign="middle">
+<caption><h3>Normal</h3></caption>
+  <tr>
+    <th></th>
+    <th>Success</th>
+    <th>Fail (Keep)</th>
+    <th>Fail (Drop)</th>
+    <th>Destroy</th>
+  </tr>
+  <tr>
+    <td>0 -> 1</td>
+    <td>95%</td>
+    <td>5%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>1 -> 2</td>
+    <td>90%</td>
+    <td>10%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>2 -> 3</td>
+    <td>85%</td>
+    <td>15%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>3 -> 4</td>
+    <td>85%</td>
+    <td>15%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>4 -> 5</td>
+    <td>80%</td>
+    <td>20%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <th>5 -> 6</th>
+    <th>75%</th>
+    <th>25%</th>
+    <th>0%</th>
+    <th>0%</th>
+  </tr>
+  <tr>
+    <td>6 -> 7</td>
+    <td>70%</td>
+    <td>30%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>7 -> 8</td>
+    <td>65%</td>
+    <td>35%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>8 -> 9</td>
+    <td>60%</td>
+    <td>40%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>9 -> 10</td>
+    <td>55%</td>
+    <td>45%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <th>10 -> 11</th>
+    <th>50%</th>
+    <th>50%</th>
+    <th>0%</th>
+    <th>0%</th>
+  </tr>
+  <tr>
+    <td>11 -> 12</td>
+    <td>45%</td>
+    <td>0%</td>
+    <td>55%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>12 -> 13</td>
+    <td>40%</td>
+    <td>0%</td>
+    <td>59.4%</td>
+    <td>0.6%</td>
+  </tr>
+  <tr>
+    <td>13 -> 14</td>
+    <td>35%</td>
+    <td>0%</td>
+    <td>63.7%</td>
+    <td>1.3%</td>
+  </tr>
+  <tr>
+    <td>14 -> 15</td>
+    <td>30%</td>
+    <td>0%</td>
+    <td>68.6%</td>
+    <td>1.4%</td>
+  </tr>
+  <tr>
+    <th>15 -> 16</th>
+    <th>30%</th>
+    <th>67.9%</th>
+    <th>0%</th>
+    <th>2.1%</th>
+  </tr>
+  <tr>
+    <td>16 -> 17</td>
+    <td>30%</td>
+    <td>0%</td>
+    <td>67.9%</td>
+    <td>2.1%</td>
+  </tr>
+  <tr>
+    <td>17 -> 18</td>
+    <td>30%</td>
+    <td>0%</td>
+    <td>67.9%</td>
+    <td>2.1%</td>
+  </tr>
+  <tr>
+    <td>18 -> 19</td>
+    <td>30%</td>
+    <td>0%</td>
+    <td>67.2%</td>
+    <td>2.8%</td>
+  </tr>
+  <tr>
+    <td>19 -> 20</td>
+    <td>30%</td>
+    <td>0%</td>
+    <td>67.2%</td>
+    <td>2.8%</td>
+  </tr>
+  <tr>
+    <th>20 -> 21</th>
+    <th>30%</th>
+    <th>63%</th>
+    <th>0%</th>
+    <th>7%</th>
+  </tr>
+  <tr>
+    <td>21 -> 22</td>
+    <td>30%</td>
+    <td>0%</td>
+    <td>63%</td>
+    <td>7%</td>
+  </tr>
+  <tr>
+    <td>22 -> 23</td>
+    <td>3%</td>
+    <td>0%</td>
+    <td>77.6%</td>
+    <td>19.4%</td>
+  </tr>
+  <tr>
+    <td>23 -> 24</td>
+    <td>2%</td>
+    <td>0%</td>
+    <td>68.6%</td>
+    <td>29.4%</td>
+  </tr>
+  <tr>
+    <td>24 -> 25</td>
+    <td>1%</td>
+    <td>0%</td>
+    <td>59.4%</td>
+    <td>39.6%</td>
+  </tr>
+</table>
+<table class="inline" border="1" align="center" valign="middle">
+<caption><h3>Superior</h3></caption>
+  <tr>
+    <th></th>
+    <th>Success</th>
+    <th>Fail (Keep)</th>
+    <th>Fail (Drop)</th>
+    <th>Destroy</th>
+  </tr>
+  <tr>
+    <td>0 -> 1</td>
+    <td>50%</td>
+    <td>50%</td>
+    <td>0%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>1 -> 2</td>
+    <td>50%</td>
+    <td>0%</td>
+    <td>50%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>2 -> 3</td>
+    <td>45%</td>
+    <td>0%</td>
+    <td>55%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>3 -> 4</td>
+    <td>40%</td>
+    <td>0%</td>
+    <td>60%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>4 -> 5</td>
+    <td>40%</td>
+    <td>0%</td>
+    <td>60%</td>
+    <td>0%</td>
+  </tr>
+  <tr>
+    <td>5 -> 6</td>
+    <td>40%</td>
+    <td>0%</td>
+    <td>58.2%</td>
+    <td>1.8%</td>
+  </tr>
+  <tr>
+    <td>6 -> 7</td>
+    <td>40%</td>
+    <td>0%</td>
+    <td>57%</td>
+    <td>3%</td>
+  </tr>
+  <tr>
+    <td>7 -> 8</td>
+    <td>40%</td>
+    <td>0%</td>
+    <td>55.8%</td>
+    <td>4.2%</td>
+  </tr>
+  <tr>
+    <td>8 -> 9</td>
+    <td>40%</td>
+    <td>0%</td>
+    <td>54%</td>
+    <td>6%</td>
+  </tr>
+  <tr>
+    <td>9 -> 10</td>
+    <td>37%</td>
+    <td>0%</td>
+    <td>53.55%</td>
+    <td>9.45%</td>
+  </tr>
+  <tr>
+    <td>10 -> 11</td>
+    <td>35%</td>
+    <td>0%</td>
+    <td>52%</td>
+    <td>13%</td>
+  </tr>
+  <tr>
+    <td>11 -> 12</td>
+    <td>35%</td>
+    <td>0%</td>
+    <td>48.75%</td>
+    <td>16.25%</td>
+  </tr>
+  <tr>
+    <td>12 -> 13</td>
+    <td>3%</td>
+    <td>0%</td>
+    <td>48.5%</td>
+    <td>48.5%</td>
+  </tr>
+  <tr>
+    <td>13 -> 14</td>
+    <td>2%</td>
+    <td>0%</td>
+    <td>49%</td>
+    <td>49%</td>
+  </tr>
+  <tr>
+    <td>14 -> 15</td>
+    <td>1%</td>
+    <td>0%</td>
+    <td>49.5%</td>
+    <td>49.5%</td>
+  </tr>
+</table>
+</td>
+</tr>
+</table>
+<br>
+11. Press "Reset" button to reset all status.<br>
+<br>
+<strong><i>Good luck, and have a good day!</i></strong><br>
+<br>
+Last update: 05/07/2020<br>
+<br>
+</p>
+<p><a href="index.html">홈페이지로</a></p>
+
+</body>
+</html>
+
