@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const postsContainer = document.getElementById('posts-container');
 
     // Fetch all posts from the API
-    fetch('http://89.147.110.89:3000/api/posts')
+    fetch('https://api.stein.shn.hk/api/posts')
         .then(response => response.json())
         .then(data => {
             // Filter posts by type "note"
